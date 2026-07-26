@@ -318,20 +318,24 @@ static void reconcile_battery(uint8_t source, uint8_t level) {
     if (source >= ESB_LINK_PIPE_MAX || level == ESB_KEEPALIVE_BATTERY_UNKNOWN) {
         return;
     }
-    if (tracked_battery_levels[source] == level) {
-        return;
-    }
+
+    bool changed = tracked_battery_levels[source] != level;
+
     tracked_battery_levels[source] = level;
+
     if (IS_ENABLED(CONFIG_ZMK_SPLIT_ESB_BATTERY_LOG)) {
         LOG_INF("peripheral %u battery %u%%", source, level);
     } else {
         LOG_DBG("peripheral %u battery %u%%", source, level);
     }
-    struct zmk_peripheral_battery_state_changed battery_event = {
-        .source = source,
-        .state_of_charge = level,
-    };
-    raise_zmk_peripheral_battery_state_changed(battery_event);
+
+    if (changed) {
+        struct zmk_peripheral_battery_state_changed battery_event = {
+            .source = source,
+            .state_of_charge = level,
+        };
+        raise_zmk_peripheral_battery_state_changed(battery_event);
+    }
 }
 
 #if ZMK_KEYMAP_HAS_SENSORS
